@@ -120,6 +120,35 @@ def test_wizard_avoids_removed_accessibility_live_region_api():
 
 def test_wizard_uses_current_alert_dialog_api():
     source = WIZARD.read_text()
+    tree = ast.parse(source)
 
     assert "Gtk.MessageDialog" not in source
-    assert "Gtk.AlertDialog" in source
+
+    helper = next(
+        (
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_show_install_in_progress_alert"
+        ),
+        None,
+    )
+    assert helper is not None
+
+    has_alert_dialog_guard = False
+    for node in ast.walk(helper):
+        if not isinstance(node, ast.Call):
+            continue
+        if not (isinstance(node.func, ast.Name) and node.func.id == "hasattr"):
+            continue
+        if len(node.args) != 2:
+            continue
+        namespace, attribute = node.args
+        if (
+            isinstance(namespace, ast.Name)
+            and namespace.id == "Gtk"
+            and isinstance(attribute, ast.Constant)
+            and attribute.value == "AlertDialog"
+        ):
+            has_alert_dialog_guard = True
+
+    assert has_alert_dialog_guard

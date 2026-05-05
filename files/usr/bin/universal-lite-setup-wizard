@@ -964,13 +964,44 @@ class SetupWizardWindow(Gtk.ApplicationWindow):
             pass
 
     def _show_install_in_progress_alert(self) -> None:
-        alert = Gtk.AlertDialog()
-        alert.set_modal(True)
-        alert.set_message(_("Install in progress"))
-        alert.set_detail(_(
+        message = _("Install in progress")
+        detail = _(
             "An install is running. Wait for it to finish "
-            "before closing this window."))
-        alert.show(self)
+            "before closing this window.")
+        if hasattr(Gtk, "AlertDialog"):
+            alert = Gtk.AlertDialog()
+            alert.set_modal(True)
+            alert.set_message(message)
+            alert.set_detail(detail)
+            alert.show(self)
+            return
+
+        window = Gtk.Window()
+        window.set_transient_for(self)
+        window.set_modal(True)
+        window.set_title(message)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        box.set_margin_top(18)
+        box.set_margin_bottom(18)
+        box.set_margin_start(18)
+        box.set_margin_end(18)
+        window.set_child(box)
+
+        title = Gtk.Label(label=message)
+        title.set_wrap(True)
+        title.add_css_class("welcome-subtitle")
+        box.append(title)
+
+        body = Gtk.Label(label=detail)
+        body.set_wrap(True)
+        box.append(body)
+
+        ok_button = Gtk.Button(label=_("OK"))
+        ok_button.connect("clicked", lambda _button: window.destroy())
+        box.append(ok_button)
+
+        window.present()
 
     def _on_close_request(self, _window) -> bool:
         # Block close during an active install so the user can't orphan
