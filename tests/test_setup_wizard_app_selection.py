@@ -1,3 +1,4 @@
+import ast
 import runpy
 import sys
 import types
@@ -64,3 +65,46 @@ def test_no_selected_apps_means_no_pinned_defaults(monkeypatch):
     module = _load_wizard_helpers(monkeypatch)
 
     assert module["_pinned_apps_for_selected_flatpaks"](set()) == []
+
+
+def test_password_entries_avoid_missing_activates_default_api():
+    tree = ast.parse(WIZARD.read_text())
+    password_entries = set()
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        if not isinstance(node.value, ast.Call):
+            continue
+        func = node.value.func
+        if not (
+            isinstance(func, ast.Attribute)
+            and func.attr == "PasswordEntry"
+            and isinstance(func.value, ast.Name)
+            and func.value.id == "Gtk"
+        ):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Attribute) and isinstance(target.value, ast.Name):
+                password_entries.add(target.attr)
+            elif isinstance(target, ast.Name):
+                password_entries.add(target.id)
+
+    bad_lines = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Attribute):
+            continue
+        if node.func.attr != "set_activates_default":
+            continue
+        receiver = node.func.value
+        if isinstance(receiver, ast.Attribute) and receiver.attr in password_entries:
+            bad_lines.append(node.lineno)
+        elif isinstance(receiver, ast.Name) and receiver.id in password_entries:
+            bad_lines.append(node.lineno)
+
+    assert not bad_lines, (
+        "Gtk.PasswordEntry in the installer image lacks set_activates_default; "
+        f"use the activate signal instead. Lines: {bad_lines}"
+    )
