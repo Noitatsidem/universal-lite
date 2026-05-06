@@ -1,3 +1,5 @@
+import ast
+import re
 import runpy
 import sys
 import types
@@ -64,3 +66,106 @@ def test_no_selected_apps_means_no_pinned_defaults(monkeypatch):
     module = _load_wizard_helpers(monkeypatch)
 
     assert module["_pinned_apps_for_selected_flatpaks"](set()) == []
+
+
+def test_password_entries_avoid_missing_activates_default_api():
+    tree = ast.parse(WIZARD.read_text())
+    password_entries = set()
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        if not isinstance(node.value, ast.Call):
+            continue
+        func = node.value.func
+        if not (
+            isinstance(func, ast.Attribute)
+            and func.attr == "PasswordEntry"
+            and isinstance(func.value, ast.Name)
+            and func.value.id == "Gtk"
+        ):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Attribute) and isinstance(target.value, ast.Name):
+                password_entries.add(target.attr)
+            elif isinstance(target, ast.Name):
+                password_entries.add(target.id)
+
+    bad_lines = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Attribute):
+            continue
+        if node.func.attr != "set_activates_default":
+            continue
+        receiver = node.func.value
+        if isinstance(receiver, ast.Attribute) and receiver.attr in password_entries:
+            bad_lines.append(node.lineno)
+        elif isinstance(receiver, ast.Name) and receiver.id in password_entries:
+            bad_lines.append(node.lineno)
+
+    assert not bad_lines, (
+        "Gtk.PasswordEntry in the installer image lacks set_activates_default; "
+        f"use the activate signal instead. Lines: {bad_lines}"
+    )
+
+
+def test_wizard_avoids_removed_accessibility_live_region_api():
+    source = WIZARD.read_text()
+
+    assert "Gtk.AccessibleProperty.LIVE" not in source
+    assert "Gtk.AccessibleLive" not in source
+    assert ".announce(" in source
+
+
+def test_wizard_uses_current_alert_dialog_api():
+    source = WIZARD.read_text()
+    tree = ast.parse(source)
+
+    assert "Gtk.MessageDialog" not in source
+
+    helper = next(
+        (
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_show_install_in_progress_alert"
+        ),
+        None,
+    )
+    assert helper is not None
+
+    has_alert_dialog_guard = False
+    for node in ast.walk(helper):
+        if not isinstance(node, ast.Call):
+            continue
+        if not (isinstance(node.func, ast.Name) and node.func.id == "hasattr"):
+            continue
+        if len(node.args) != 2:
+            continue
+        namespace, attribute = node.args
+        if (
+            isinstance(namespace, ast.Name)
+            and namespace.id == "Gtk"
+            and isinstance(attribute, ast.Constant)
+            and attribute.value == "AlertDialog"
+        ):
+            has_alert_dialog_guard = True
+
+    assert has_alert_dialog_guard
+
+
+def test_wizard_dropdowns_force_dark_theme_foregrounds(monkeypatch):
+    css = _load_wizard_helpers(monkeypatch)["CSS"]
+
+    for selector in (
+        "dropdown button",
+        "dropdown button label",
+        "dropdown button arrow",
+        "dropdown popover label",
+    ):
+        assert re.search(
+            rf"(^|\n){re.escape(selector)}\s*\{{[^}}]*\bcolor\s*:",
+            css,
+            flags=re.DOTALL,
+        ), f"{selector} must set color for the wizard's dark custom theme"
