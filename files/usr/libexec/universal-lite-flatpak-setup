@@ -109,6 +109,7 @@ fi
 # but nothing to install today.
 if [ ! -s "$APPS_FILE" ]; then
     echo "No apps selected. Skipping app install."
+    skip_requested "before marking empty app setup complete"
     touch "$STAMP"
     exit 0
 fi

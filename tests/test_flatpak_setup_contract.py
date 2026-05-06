@@ -76,8 +76,11 @@ def test_flatpak_setup_rechecks_skip_marker_after_startup():
 
 def test_flatpak_setup_rechecks_skip_marker_before_done_stamp():
     script = FLATPAK_SETUP.read_text()
-    completion_block = script[script.index("All requested apps are installed") - 200 :]
+    stamp_positions = [
+        index for index in range(len(script)) if script.startswith('touch "$STAMP"', index)
+    ]
 
-    assert completion_block.index(
-        "skip_requested \"before marking setup complete\""
-    ) < completion_block.index("touch \"$STAMP\"")
+    assert len(stamp_positions) == 2
+    for stamp_position in stamp_positions:
+        preceding_block = script[max(0, stamp_position - 200) : stamp_position]
+        assert "skip_requested" in preceding_block
