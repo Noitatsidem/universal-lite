@@ -46,6 +46,7 @@ def test_flatpak_skip_helper_and_sudoers_contract():
     assert "mkdir -p /var/lib/universal-lite" in helper
     assert f": > {SKIP_MARKER}" in helper
     assert f"chmod 0644 {SKIP_MARKER}" in helper
+    assert "systemctl stop universal-lite-flatpak-install.service" in helper
     assert f"greetd ALL=(root) NOPASSWD: {SKIP_HELPER}" in sudoers
     assert SKIP_HELPER in build
 
@@ -68,3 +69,15 @@ def test_flatpak_setup_rechecks_skip_marker_after_startup():
     assert script.index("skip_requested \"before installing $app_id\"") < script.index(
         "flatpak install --or-update"
     )
+    assert script.index("skip_requested \"after installing $app_id\"") > script.index(
+        "flatpak install --or-update"
+    )
+
+
+def test_flatpak_setup_rechecks_skip_marker_before_done_stamp():
+    script = FLATPAK_SETUP.read_text()
+    completion_block = script[script.index("All requested apps are installed") - 200 :]
+
+    assert completion_block.index(
+        "skip_requested \"before marking setup complete\""
+    ) < completion_block.index("touch \"$STAMP\"")
