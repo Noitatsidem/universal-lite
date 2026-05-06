@@ -134,6 +134,8 @@ DARK_THEME_COLORS = {
     "secondary_fg": "#aaaaaa",
     "tertiary_fg": "#888888",
     "disabled_fg": "#888888",
+    "disabled_bg": "#3d3d3d",
+    "hover_fg": "#bbbbbb",
     "accent_bg": "#3584e4",
     "accent_hover_bg": "#62a0ea",
     "accent_active_bg": "#1c71d8",
@@ -259,7 +261,7 @@ button.create-button:active {
 }
 
 button.create-button:disabled {
-    background: #3d3d3d;
+    background: $disabled_bg;
     color: $disabled_fg;
     box-shadow: none;
 }
@@ -296,7 +298,7 @@ button.destructive-button:active {
 }
 
 button.destructive-button:disabled {
-    background: #3d3d3d;
+    background: $disabled_bg;
     color: $disabled_fg;
     box-shadow: none;
 }
@@ -335,7 +337,7 @@ button.back-button:active {
 }
 
 button.back-button:active label {
-    color: #bbbbbb;
+    color: $hover_fg;
 }
 
 .keyboard-toggle {
@@ -521,7 +523,7 @@ button.back-button:active label {
 }
 
 .details-toggle:hover {
-    color: #bbbbbb;
+    color: $hover_fg;
 }
 
 .warning-label {
