@@ -18,6 +18,7 @@ set -uo pipefail
 
 APPS_FILE=/var/lib/universal-lite/flatpak-apps
 STAMP=/var/lib/universal-lite/flatpak-setup.done
+SKIP_STAMP=/var/lib/universal-lite/flatpak-setup.skip
 PROGRESS_DIR=/run/universal-lite
 PROGRESS_FILE=$PROGRESS_DIR/flatpak-progress
 LOGIN_READY_FILE=$PROGRESS_DIR/flatpak-login-ready
@@ -52,6 +53,12 @@ allow_login_this_boot() {
     : > "$LOGIN_READY_FILE"
     chmod 0644 "$LOGIN_READY_FILE"
 }
+
+# -----------------------------------------------------------------
+if [ -f "$SKIP_STAMP" ]; then
+    echo "Flatpak setup was skipped by the user; not running automatic setup."
+    exit 0
+fi
 
 # -----------------------------------------------------------------
 # Mode 2: update existing Flatpaks on every boot after initial setup

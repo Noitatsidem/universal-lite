@@ -13,6 +13,7 @@ After=universal-lite-first-boot.service NetworkManager.service
 # takes over and runs in the background.
 ConditionPathExists=/var/lib/universal-lite/setup-done
 ConditionPathExists=!/var/lib/universal-lite/flatpak-setup.done
+ConditionPathExists=!/var/lib/universal-lite/flatpak-setup.skip
 
 [Service]
 # Type=exec so graphical.target reaches active as soon as bash is
