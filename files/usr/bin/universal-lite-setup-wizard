@@ -157,8 +157,37 @@ window {
     color: $primary_fg;
 }
 
+* {
+    color: $primary_fg;
+    -gtk-icon-palette: success $success_fg, warning #f6d32d, error $error_fg;
+}
+
+selection {
+    background-color: $selection_bg;
+    color: $selection_fg;
+}
+
+label {
+    color: $primary_fg;
+}
+
+checkbutton {
+    color: $primary_fg;
+}
+
 checkbutton label {
     color: $primary_fg;
+}
+
+checkbutton check {
+    background-color: $control_bg;
+    border: 1px solid $border_subtle;
+    color: $primary_fg;
+}
+
+checkbutton check:checked {
+    background-color: $accent_bg;
+    border: 1px solid $accent_bg;
 }
 
 .welcome-title {
@@ -196,7 +225,44 @@ checkbutton label {
 }
 
 .form-entry:focus {
-    border: 1px solid $accent_hover_bg;
+    border: 1px solid $focus_border;
+}
+
+entry,
+entry.search,
+.form-entry {
+    background-color: $control_bg;
+    color: $primary_fg;
+    border: 1px solid $border_subtle;
+    border-radius: 8px;
+    caret-color: $primary_fg;
+    box-shadow: none;
+}
+
+entry:focus,
+entry.search:focus,
+.form-entry:focus {
+    border: 1px solid $focus_border;
+}
+
+entry text,
+entry.search text {
+    background-color: $control_bg;
+    color: $primary_fg;
+}
+
+entry image,
+entry.search image {
+    color: $secondary_fg;
+}
+
+entry:disabled,
+entry text:disabled {
+    color: $disabled_fg;
+}
+
+dropdown {
+    color: $primary_fg;
 }
 
 dropdown button {
@@ -211,9 +277,13 @@ dropdown button:hover {
     background-color: $control_hover_bg;
 }
 
+dropdown button:active {
+    background-color: $control_active_bg;
+}
+
 dropdown button:focus,
 dropdown button:focus-visible {
-    border: 1px solid $accent_hover_bg;
+    border: 1px solid $focus_border;
 }
 
 dropdown button label {
@@ -226,6 +296,40 @@ dropdown button arrow {
 
 dropdown popover {
     background-color: $card_bg;
+    color: $primary_fg;
+}
+
+dropdown popover contents {
+    background-color: $card_bg;
+    color: $primary_fg;
+    border: 1px solid $border;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+dropdown popover entry.search {
+    background-color: $control_bg;
+    color: $primary_fg;
+    border: 1px solid $focus_border;
+}
+
+dropdown popover listview {
+    background-color: $card_bg;
+    color: $primary_fg;
+}
+
+dropdown popover row {
+    background-color: $card_bg;
+    color: $primary_fg;
+    border-radius: 6px;
+}
+
+dropdown popover row:hover {
+    background-color: $subtle_bg;
+}
+
+dropdown popover row:selected {
+    background-color: $selected_bg;
     color: $primary_fg;
 }
 
@@ -388,6 +492,7 @@ button.back-button:active label {
 
 .card {
     background-color: $card_bg;
+    color: $primary_fg;
     border-radius: 16px;
     padding: 40px;
     border: 1px solid $border;
@@ -419,6 +524,70 @@ button.back-button:active label {
     font-size: 12px;
     color: $secondary_fg;
     margin-bottom: 8px;
+}
+
+popover.background {
+    background-color: transparent;
+    color: $primary_fg;
+}
+
+popover contents {
+    background-color: $card_bg;
+    color: $primary_fg;
+    border: 1px solid $border;
+    border-radius: 12px;
+}
+
+popover arrow {
+    background-color: $card_bg;
+    border: 1px solid $border;
+}
+
+list,
+listbox {
+    background-color: transparent;
+    color: $primary_fg;
+}
+
+row {
+    background-color: transparent;
+    color: $primary_fg;
+}
+
+row:hover {
+    background-color: $subtle_bg;
+}
+
+row:selected {
+    background-color: $selected_bg;
+    color: $primary_fg;
+}
+
+scrolledwindow,
+viewport {
+    background-color: transparent;
+}
+
+scrollbar {
+    background-color: transparent;
+}
+
+scrollbar trough {
+    background-color: transparent;
+}
+
+scrollbar slider {
+    background-color: $control_hover_bg;
+    border-radius: 999px;
+    min-width: 6px;
+    min-height: 6px;
+}
+
+textview,
+textview text {
+    background-color: $log_bg;
+    color: $log_fg;
+    caret-color: $primary_fg;
 }
 
 .dark-list {
