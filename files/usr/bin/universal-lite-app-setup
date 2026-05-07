@@ -144,6 +144,7 @@ class AppSetupWindow(Gtk.ApplicationWindow):
         super().__init__(application=app, title="Set up your apps")
         self.set_default_size(520, 360)
         self.set_resizable(False)
+        self._install_app_hold = None
 
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         outer.set_halign(Gtk.Align.CENTER)
@@ -203,7 +204,7 @@ class AppSetupWindow(Gtk.ApplicationWindow):
 
         self._install_btn = Gtk.Button(label="Install apps")
         self._install_btn.add_css_class("primary-button")
-        self._install_btn.connect("clicked", lambda _btn: self._install())
+        self._install_clicked_handler_id = self._install_btn.connect("clicked", lambda _btn: self._install())
         actions.append(self._install_btn)
 
         self.set_child(outer)
@@ -231,6 +232,10 @@ class AppSetupWindow(Gtk.ApplicationWindow):
         self._title.set_text("Installing apps")
         self._status.set_text("Starting app installation...")
         self._dismiss_btn.set_label("Run in background")
+        app = self.get_application()
+        if app is not None and self._install_app_hold is None:
+            app.hold()
+            self._install_app_hold = app
         threading.Thread(target=self._run_install_worker, daemon=True).start()
 
     def _run_install_worker(self) -> None:
@@ -247,7 +252,13 @@ class AppSetupWindow(Gtk.ApplicationWindow):
             return
         GLib.idle_add(self._show_install_result, result)
 
+    def _release_install_app_hold(self) -> None:
+        if self._install_app_hold is not None:
+            self._install_app_hold.release()
+            self._install_app_hold = None
+
     def _show_install_exception(self, exc) -> bool:
+        self._release_install_app_hold()
         self._set_busy(False)
         self._title.set_text("No network connection")
         self._status.set_text(f"Connect to Wi-Fi or Ethernet, then try again. ({exc})")
@@ -256,13 +267,15 @@ class AppSetupWindow(Gtk.ApplicationWindow):
         return GLib.SOURCE_REMOVE
 
     def _show_install_result(self, result) -> bool:
+        self._release_install_app_hold()
         events = _parse_install_output(result.stdout)
         self._set_busy(False)
         if result.returncode == 0 and events.complete:
             self._title.set_text("Apps installed")
             self._status.set_text("Your selected apps are ready to use.")
             self._install_btn.set_label("Done")
-            self._install_btn.connect("clicked", lambda _btn: self.close())
+            self._install_btn.disconnect(self._install_clicked_handler_id)
+            self._install_clicked_handler_id = self._install_btn.connect("clicked", lambda _btn: self.close())
         elif events.failed:
             self._title.set_text("Some apps couldn't be installed")
             failed = ", ".join(_friendly_name(app_id) for app_id in events.failed)

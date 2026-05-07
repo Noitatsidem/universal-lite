@@ -97,3 +97,19 @@ def test_app_setup_uses_background_thread_for_install():
     assert "threading.Thread" in source
     assert "GLib.idle_add" in source
     assert "Run in background" in source
+
+
+def test_app_setup_holds_application_during_background_install():
+    source = SCRIPT.read_text()
+
+    assert "_install_app_hold" in source
+    assert ".hold()" in source
+    assert ".release()" in source
+
+
+def test_app_setup_disconnects_install_handler_before_done_handler():
+    source = SCRIPT.read_text()
+
+    assert "_install_clicked_handler_id" in source
+    assert "self._install_btn.disconnect(self._install_clicked_handler_id)" in source
+    assert "self._install_clicked_handler_id = self._install_btn.connect" in source
