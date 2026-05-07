@@ -268,11 +268,13 @@ chmod 0755 \
     /usr/bin/universal-lite-settings \
     /usr/bin/universal-lite-setup-wizard \
     /usr/bin/universal-lite-greeter \
+    /usr/bin/universal-lite-app-setup \
     /usr/libexec/universal-lite-apply-settings \
     /usr/libexec/universal-lite-encrypted-swap \
     /usr/libexec/universal-lite-first-boot \
     /usr/libexec/universal-lite-flatpak-setup \
     /usr/libexec/universal-lite-flatpak-skip \
+    /usr/libexec/universal-lite-app-setup-helper \
     /usr/libexec/universal-lite-wallpaper-thumbnailer \
     /usr/libexec/universal-lite-nightlight \
     /usr/libexec/universal-lite-set-memory-strategy \
@@ -445,7 +447,7 @@ systemctl enable avahi-daemon.socket 2>/dev/null || true
 # nothing on the common case and keeps us aligned with the base image.
 systemctl enable NetworkManager.service
 systemctl enable universal-lite-first-boot.service
-systemctl enable universal-lite-flatpak-install.service
+systemctl disable universal-lite-flatpak-install.service 2>/dev/null || true
 systemctl enable universal-lite-flatpak-update.service
 # OOM protection on 2 GB hardware — oomd kills the heaviest cgroup under
 # memory/swap pressure before the kernel OOM killer engages and freezes
