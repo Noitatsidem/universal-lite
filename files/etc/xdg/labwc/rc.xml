@@ -13,6 +13,19 @@
     <followMouse>no</followMouse>
     <raiseOnFocus>yes</raiseOnFocus>
   </focus>
+  <libinput>
+    <device category="touchpad">
+      <tap>yes</tap>
+      <naturalScroll>no</naturalScroll>
+      <pointerSpeed>0.00</pointerSpeed>
+      <scrollFactor>5</scrollFactor>
+    </device>
+    <device category="default">
+      <naturalScroll>no</naturalScroll>
+      <pointerSpeed>0.00</pointerSpeed>
+      <accelProfile>adaptive</accelProfile>
+    </device>
+  </libinput>
   <keyboard>
     <repeatDelay>300</repeatDelay>
     <repeatRate>40</repeatRate>
@@ -93,6 +106,9 @@
     <keybind key="W-Down">
       <action name="Iconify"/>
     </keybind>
+    <xkb>
+      <xkbLayout>us</xkbLayout>
+    </xkb>
   </keyboard>
   <!-- Mouse bindings: defining ANY mousebind replaces ALL labwc
        built-in defaults, so we must include the full set. -->

@@ -6,6 +6,7 @@ export XDG_CURRENT_DESKTOP="Universal-Lite:labwc"
 export XDG_SESSION_DESKTOP="universal-lite"
 export XDG_SESSION_TYPE="wayland"
 export GTK_USE_PORTAL=1
+export ADW_DISABLE_PORTAL=1
 
 # Fix wlroots hardware cursor rendering upside-down / misplaced in VMs.
 if systemd-detect-virt -q; then
