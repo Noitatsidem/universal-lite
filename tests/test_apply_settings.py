@@ -269,6 +269,29 @@ def test_write_gtk_settings_can_skip_gsettings_for_pre_compositor_mode(
     assert calls == []
 
 
+def test_write_gtk_settings_resets_window_button_layout_for_chrome(
+    monkeypatch, tmp_path
+):
+    calls = []
+    monkeypatch.setattr(apply_settings, "GTK3_DIR", tmp_path / "gtk3")
+    monkeypatch.setattr(apply_settings, "GTK4_DIR", tmp_path / "gtk4")
+    monkeypatch.setattr(
+        apply_settings,
+        "_run_best_effort",
+        lambda cmd, **kwargs: calls.append(cmd) or True,
+    )
+
+    apply_settings.write_gtk_settings(_make_tokens(), sync_live=True)
+
+    assert [
+        "gsettings",
+        "set",
+        "org.gnome.desktop.wm.preferences",
+        "button-layout",
+        ":minimize,maximize,close",
+    ] in calls
+
+
 def test_session_startup_uses_config_then_autostart_uses_live_mode():
     root = Path(__file__).resolve().parents[1]
     session = (root / "files/usr/libexec/universal-lite-session").read_text(
@@ -292,6 +315,29 @@ def test_session_renderer_policy_is_conditional_not_global_gl():
     assert "timeout 3s vulkaninfo --summary" in session
     assert "export GSK_RENDERER=gl" in session
     assert "Keep Vulkan available on real hardware" in session
+
+
+def test_session_makes_libadwaita_use_gsettings_for_color_scheme():
+    root = Path(__file__).resolve().parents[1]
+    session = (root / "files/usr/libexec/universal-lite-session").read_text(
+        encoding="utf-8"
+    )
+    autostart = (root / "files/etc/xdg/labwc/autostart").read_text(
+        encoding="utf-8"
+    )
+
+    assert "export ADW_DISABLE_PORTAL=1" in session
+    assert "ADW_DISABLE_PORTAL" in autostart
+
+
+def test_system_labwc_rc_includes_generated_input_defaults():
+    root = Path(__file__).resolve().parents[1]
+    rc = (root / "files/etc/xdg/labwc/rc.xml").read_text(encoding="utf-8")
+
+    assert "<libinput>" in rc
+    assert "<tap>yes</tap>" in rc
+    assert "<scrollFactor>5</scrollFactor>" in rc
+    assert "<xkbLayout>us</xkbLayout>" in rc
 
 
 def test_wizard_session_forces_gl_renderer_even_when_vulkan_probe_succeeds():
@@ -1137,6 +1183,16 @@ class TestAccentForegroundContrast:
         ini = (tmp_path / "foot.ini").read_text()
         assert "selection-background=c88800" in ini
         assert "selection-foreground=1e1e1e" in ini
+
+    def test_foot_config_uses_current_color_theme_sections(self, tmp_path):
+        tokens = apply_settings._build_tokens(_make_settings(theme="light"))
+        with patch.object(apply_settings, "FOOT_DIR", tmp_path):
+            apply_settings.write_foot_config(tokens)
+        ini = (tmp_path / "foot.ini").read_text()
+        assert "initial-color-theme=light" in ini
+        assert "\n[colors]\n" not in ini
+        assert "\n[colors-dark]\n" in ini
+        assert "\n[colors-light]\n" in ini
 
     def test_labwc_menu_active_text_follows_accent_contrast(self, tmp_path):
         tokens = apply_settings._build_tokens(_make_settings(accent="yellow"))
