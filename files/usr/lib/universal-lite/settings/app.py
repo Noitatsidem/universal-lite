@@ -61,7 +61,7 @@ def _accent_check_fg(hex_value: str) -> str:
     return _CHECK_FG_DARK
 
 
-def _build_accent_css() -> str:
+def _build_accent_css(current_accent: str = "blue") -> str:
     """Generate the .accent-<name> swatch rules from palette.json.
 
     Runs at app startup so the accent picker always reflects the
@@ -76,6 +76,10 @@ def _build_accent_css() -> str:
         return ""
     accents = palette.get("accents", {})
     rules = []
+    accent = accents.get(current_accent, accents.get("blue"))
+    if accent:
+        rules.append(f"@define-color accent_color {accent};")
+        rules.append(f"@define-color accent_fg_color {_accent_check_fg(accent)};")
     for name, hex_value in accents.items():
         check_fg = _accent_check_fg(hex_value)
         rules.append(f".accent-{name} {{ background-color: {hex_value}; }}")
@@ -88,6 +92,15 @@ class SettingsApp(Adw.Application):
         super().__init__(application_id=APP_ID)
         self._store = SettingsStore()
         self._event_bus = EventBus()
+        self._accent_provider: Gtk.CssProvider | None = None
+        self._event_bus.subscribe("accent-changed", self._reload_accent_css)
+
+    def _reload_accent_css(self, accent: str | None = None) -> None:
+        if self._accent_provider is None:
+            return
+        self._accent_provider.load_from_string(
+            _build_accent_css(accent or self._store.get("accent", "blue"))
+        )
 
     def do_activate(self) -> None:
         win = self.get_active_window()
@@ -104,13 +117,13 @@ class SettingsApp(Adw.Application):
                 base_provider,
                 Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
             )
-            accent_css = _build_accent_css()
+            accent_css = _build_accent_css(self._store.get("accent", "blue"))
             if accent_css:
-                accent_provider = Gtk.CssProvider()
-                accent_provider.load_from_string(accent_css)
+                self._accent_provider = Gtk.CssProvider()
+                self._accent_provider.load_from_string(accent_css)
                 Gtk.StyleContext.add_provider_for_display(
                     display,
-                    accent_provider,
+                    self._accent_provider,
                     Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
                 )
         win = SettingsWindow(self, self._store, self._event_bus)

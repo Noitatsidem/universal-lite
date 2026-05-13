@@ -1495,6 +1495,10 @@ def write_gtk_settings(tokens: dict, sync_live: bool = True) -> None:
         ["gsettings", "set", "org.gnome.desktop.interface", "font-name", f"Roboto {tokens['font_size_ui']}"],
         ["gsettings", "set", "org.gnome.desktop.interface", "cursor-theme", "Adwaita"],
         ["gsettings", "set", "org.gnome.desktop.interface", "cursor-size", str(tokens["cursor_size"])],
+        [
+            "gsettings", "set", "org.gnome.desktop.wm.preferences",
+            "button-layout", ":minimize,maximize,close",
+        ],
     ]
     for command in gsettings_commands:
         _run_best_effort(command, timeout=5)
@@ -1542,23 +1546,17 @@ def write_foot_config(tokens: dict) -> None:
 
     theme = tokens["theme"]
     accent = tokens["accent_hex"]
-    term = dict(ADWAITA_TERMINAL[theme])
-    if tokens["high_contrast"]:
-        term["foreground"] = "ffffff"
-        term["background"] = "000000"
-    alpha = "1.00" if tokens["high_contrast"] else ("0.97" if theme == "light" else "0.95")
     selection_bg = _strip_hash(accent)
     selection_fg = _strip_hash(tokens["accent_fg_hex"])
 
-    ini = f"""\
-[main]
-font={tokens["font_mono"]}:size={tokens["font_size_mono"]}
-pad=12x12 center
-
-[scrollback]
-lines=10000
-
-[colors]
+    def color_section(name: str) -> str:
+        term = dict(ADWAITA_TERMINAL[name])
+        if tokens["high_contrast"]:
+            term["foreground"] = "ffffff"
+            term["background"] = "000000"
+        alpha = "1.00" if tokens["high_contrast"] else ("0.97" if name == "light" else "0.95")
+        return f"""\
+[colors-{name}]
 alpha={alpha}
 foreground={term["foreground"]}
 background={term["background"]}
@@ -1583,6 +1581,18 @@ bright5={term["bright5"]}
 bright6={term["bright6"]}
 bright7={term["bright7"]}
 """
+
+    ini = f"""\
+[main]
+font={tokens["font_mono"]}:size={tokens["font_size_mono"]}
+pad=12x12 center
+initial-color-theme={theme}
+
+[scrollback]
+lines=10000
+
+{color_section("dark")}
+{color_section("light")}"""
 
     target = FOOT_DIR / "foot.ini"
     try:
