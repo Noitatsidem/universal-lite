@@ -11,10 +11,12 @@ fi
 # These must run after labwc creates the Wayland socket.
 dbus-update-activation-environment --systemd \
   WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP \
-  XDG_SESSION_TYPE GTK_USE_PORTAL GSK_RENDERER UNIVERSAL_LITE || true
+  XDG_SESSION_TYPE GTK_USE_PORTAL ADW_DISABLE_PORTAL GSK_RENDERER \
+  UNIVERSAL_LITE || true
 systemctl --user import-environment \
   WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP \
-  XDG_SESSION_TYPE GTK_USE_PORTAL GSK_RENDERER UNIVERSAL_LITE || true
+  XDG_SESSION_TYPE GTK_USE_PORTAL ADW_DISABLE_PORTAL GSK_RENDERER \
+  UNIVERSAL_LITE || true
 xdg-user-dirs-update >/dev/null 2>&1 || true
 
 # Start gnome-keyring-daemon for secret storage (Chrome passwords, WiFi keys, etc.)

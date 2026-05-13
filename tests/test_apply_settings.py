@@ -317,6 +317,29 @@ def test_session_renderer_policy_is_conditional_not_global_gl():
     assert "Keep Vulkan available on real hardware" in session
 
 
+def test_session_makes_libadwaita_use_gsettings_for_color_scheme():
+    root = Path(__file__).resolve().parents[1]
+    session = (root / "files/usr/libexec/universal-lite-session").read_text(
+        encoding="utf-8"
+    )
+    autostart = (root / "files/etc/xdg/labwc/autostart").read_text(
+        encoding="utf-8"
+    )
+
+    assert "export ADW_DISABLE_PORTAL=1" in session
+    assert "ADW_DISABLE_PORTAL" in autostart
+
+
+def test_system_labwc_rc_includes_generated_input_defaults():
+    root = Path(__file__).resolve().parents[1]
+    rc = (root / "files/etc/xdg/labwc/rc.xml").read_text(encoding="utf-8")
+
+    assert "<libinput>" in rc
+    assert "<tap>yes</tap>" in rc
+    assert "<scrollFactor>5</scrollFactor>" in rc
+    assert "<xkbLayout>us</xkbLayout>" in rc
+
+
 def test_wizard_session_forces_gl_renderer_even_when_vulkan_probe_succeeds():
     root = Path(__file__).resolve().parents[1]
     wizard_session = (
@@ -1160,6 +1183,16 @@ class TestAccentForegroundContrast:
         ini = (tmp_path / "foot.ini").read_text()
         assert "selection-background=c88800" in ini
         assert "selection-foreground=1e1e1e" in ini
+
+    def test_foot_config_uses_current_color_theme_sections(self, tmp_path):
+        tokens = apply_settings._build_tokens(_make_settings(theme="light"))
+        with patch.object(apply_settings, "FOOT_DIR", tmp_path):
+            apply_settings.write_foot_config(tokens)
+        ini = (tmp_path / "foot.ini").read_text()
+        assert "initial-color-theme=light" in ini
+        assert "\n[colors]\n" not in ini
+        assert "\n[colors-dark]\n" in ini
+        assert "\n[colors-light]\n" in ini
 
     def test_labwc_menu_active_text_follows_accent_contrast(self, tmp_path):
         tokens = apply_settings._build_tokens(_make_settings(accent="yellow"))
