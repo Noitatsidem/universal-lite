@@ -522,7 +522,7 @@ class TestVerticalCss:
         assert "#image.pin-0" in css
         assert "border-radius: 999px" in css
 
-    def test_vertical_controls_do_not_add_horizontal_padding(self):
+    def test_vertical_icon_controls_use_square_hit_targets(self):
         tokens = _make_tokens(
             edge="left",
             is_vertical=True,
@@ -533,7 +533,18 @@ class TestVerticalCss:
         for selector in ("#custom-launcher", "#taskbar button", "#image.pin-0"):
             match = re.search(rf"{re.escape(selector)} \{{(?P<body>.*?)\n\}}", css, re.S)
             assert match is not None
-            assert f"padding: {tokens['panel_pad_module']}px 0" in match.group("body")
+            assert "padding: 0" in match.group("body")
+
+    def test_vertical_taskbar_icon_is_centered_inside_active_pill(self):
+        tokens = _make_tokens(edge="right", is_vertical=True)
+        css = apply_settings._waybar_css_vertical(tokens)
+
+        button = re.search(r"#taskbar button \{(?P<body>.*?)\n\}", css, re.S)
+        image = re.search(r"#taskbar button image \{(?P<body>.*?)\n\}", css, re.S)
+        assert button is not None
+        assert image is not None
+        assert "padding: 0" in button.group("body")
+        assert "margin: auto" in image.group("body")
 
 
 # ---------------------------------------------------------------------------
