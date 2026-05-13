@@ -269,6 +269,29 @@ def test_write_gtk_settings_can_skip_gsettings_for_pre_compositor_mode(
     assert calls == []
 
 
+def test_write_gtk_settings_resets_window_button_layout_for_chrome(
+    monkeypatch, tmp_path
+):
+    calls = []
+    monkeypatch.setattr(apply_settings, "GTK3_DIR", tmp_path / "gtk3")
+    monkeypatch.setattr(apply_settings, "GTK4_DIR", tmp_path / "gtk4")
+    monkeypatch.setattr(
+        apply_settings,
+        "_run_best_effort",
+        lambda cmd, **kwargs: calls.append(cmd) or True,
+    )
+
+    apply_settings.write_gtk_settings(_make_tokens(), sync_live=True)
+
+    assert [
+        "gsettings",
+        "set",
+        "org.gnome.desktop.wm.preferences",
+        "button-layout",
+        ":minimize,maximize,close",
+    ] in calls
+
+
 def test_session_startup_uses_config_then_autostart_uses_live_mode():
     root = Path(__file__).resolve().parents[1]
     session = (root / "files/usr/libexec/universal-lite-session").read_text(

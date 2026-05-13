@@ -1495,6 +1495,10 @@ def write_gtk_settings(tokens: dict, sync_live: bool = True) -> None:
         ["gsettings", "set", "org.gnome.desktop.interface", "font-name", f"Roboto {tokens['font_size_ui']}"],
         ["gsettings", "set", "org.gnome.desktop.interface", "cursor-theme", "Adwaita"],
         ["gsettings", "set", "org.gnome.desktop.interface", "cursor-size", str(tokens["cursor_size"])],
+        [
+            "gsettings", "set", "org.gnome.desktop.wm.preferences",
+            "button-layout", ":minimize,maximize,close",
+        ],
     ]
     for command in gsettings_commands:
         _run_best_effort(command, timeout=5)
