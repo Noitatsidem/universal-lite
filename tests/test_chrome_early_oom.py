@@ -1,5 +1,6 @@
 import importlib.machinery
 import importlib.util
+import subprocess
 import sys
 from pathlib import Path
 
@@ -71,3 +72,81 @@ def test_pressure_state_resets_after_recovery_and_honors_cooldown():
     assert state.record_sample(130, 230, now=120) is False
     assert state.record_sample(120, 220, now=168) is False
     assert state.record_sample(110, 210, now=170) is True
+
+
+class FakeRunner:
+    def __init__(self):
+        self.calls = []
+
+    def __call__(self, command, **kwargs):
+        self.calls.append(command)
+        if command[:3] == ["loginctl", "list-users", "--no-legend"]:
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                stdout="1000 hopeful\n1001 other\n",
+                stderr="",
+            )
+        if command[:7] == [
+            "systemctl",
+            "--user",
+            "--machine=1000@",
+            "list-units",
+            "app-flatpak-com.google.Chrome-*.scope",
+            "--all",
+            "--no-pager",
+        ]:
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                stdout=(
+                    "app-flatpak-com.google.Chrome-111.scope loaded failed failed app-flatpak-com.google.Chrome-111.scope\n"
+                    "app-flatpak-com.google.Chrome-222.scope loaded active running app-flatpak-com.google.Chrome-222.scope\n"
+                    "app-flatpak-org.mozilla.firefox-333.scope loaded active running app-flatpak-org.mozilla.firefox-333.scope\n"
+                ),
+                stderr="",
+            )
+        if command[:7] == [
+            "systemctl",
+            "--user",
+            "--machine=1001@",
+            "list-units",
+            "app-flatpak-com.google.Chrome-*.scope",
+            "--all",
+            "--no-pager",
+        ]:
+            return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+
+def test_list_logged_in_uids_uses_loginctl():
+    early_oom = load_module()
+    runner = FakeRunner()
+
+    assert early_oom.list_logged_in_uids(runner=runner) == ["1000", "1001"]
+
+
+def test_list_active_chrome_scopes_returns_only_active_chrome_units():
+    early_oom = load_module()
+    runner = FakeRunner()
+
+    scopes = early_oom.list_active_chrome_scopes("1000", runner=runner)
+
+    assert scopes == ["app-flatpak-com.google.Chrome-222.scope"]
+
+
+def test_kill_chrome_scopes_targets_user_manager_units():
+    early_oom = load_module()
+    runner = FakeRunner()
+
+    killed = early_oom.kill_chrome_scopes(runner=runner)
+
+    assert killed == ["1000:app-flatpak-com.google.Chrome-222.scope"]
+    assert [
+        "systemctl",
+        "--user",
+        "--machine=1000@",
+        "kill",
+        "--kill-who=all",
+        "app-flatpak-com.google.Chrome-222.scope",
+    ] in runner.calls

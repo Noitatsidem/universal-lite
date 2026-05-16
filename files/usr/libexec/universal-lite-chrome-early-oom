@@ -70,3 +70,82 @@ class PressureState:
     def mark_triggered(self, now: float) -> None:
         self.last_triggered_at = now
         self.critical_samples = 0
+
+
+def run_command(command: list[str], **kwargs) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(command, text=True, capture_output=True, check=False, **kwargs)
+
+
+def list_logged_in_uids(runner=run_command) -> list[str]:
+    result = runner(["loginctl", "list-users", "--no-legend"])
+    if result.returncode != 0:
+        logging.warning("failed to list logged-in users: %s", result.stderr.strip())
+        return []
+
+    uids: list[str] = []
+    for line in result.stdout.splitlines():
+        fields = line.split()
+        if fields and fields[0].isdigit():
+            uids.append(fields[0])
+    return uids
+
+
+def user_systemctl(uid: str, *args: str) -> list[str]:
+    return ["systemctl", "--user", f"--machine={uid}@", *args]
+
+
+def list_active_chrome_scopes(uid: str, runner=run_command) -> list[str]:
+    result = runner(
+        user_systemctl(
+            uid,
+            "list-units",
+            CHROME_SCOPE_PATTERN,
+            "--all",
+            "--no-pager",
+            "--plain",
+            "--full",
+            "--no-legend",
+        )
+    )
+    if result.returncode != 0:
+        logging.warning(
+            "failed to list Chrome scopes for uid %s: %s",
+            uid,
+            result.stderr.strip(),
+        )
+        return []
+
+    scopes: list[str] = []
+    for line in result.stdout.splitlines():
+        fields = line.split()
+        if len(fields) < 4:
+            continue
+        unit = fields[0]
+        active = fields[2]
+        if not unit.startswith("app-flatpak-com.google.Chrome-"):
+            continue
+        if not unit.endswith(".scope"):
+            continue
+        if active in {"active", "activating"}:
+            scopes.append(unit)
+    return scopes
+
+
+def kill_chrome_scopes(runner=run_command) -> list[str]:
+    killed: list[str] = []
+    for uid in list_logged_in_uids(runner=runner):
+        for scope in list_active_chrome_scopes(uid, runner=runner):
+            result = runner(
+                user_systemctl(uid, "kill", "--kill-who=all", scope)
+            )
+            if result.returncode == 0:
+                logging.warning("killed Chrome scope uid=%s unit=%s", uid, scope)
+                killed.append(f"{uid}:{scope}")
+            else:
+                logging.warning(
+                    "failed to kill Chrome scope uid=%s unit=%s: %s",
+                    uid,
+                    scope,
+                    result.stderr.strip(),
+                )
+    return killed
