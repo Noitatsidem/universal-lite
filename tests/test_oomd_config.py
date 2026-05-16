@@ -31,8 +31,8 @@ def test_oomd_global_thresholds_fire_before_zram_is_exhausted():
     conf = OOMD_CONF.read_text(encoding="utf-8")
 
     assert "SwapUsedLimit=80%" in conf
-    assert "DefaultMemoryPressureLimit=50%" in conf
-    assert "DefaultMemoryPressureDurationSec=20s" in conf
+    assert "DefaultMemoryPressureLimit=55%" in conf
+    assert "DefaultMemoryPressureDurationSec=25s" in conf
 
 
 def test_oomd_monitors_root_slice_for_swap_exhaustion():
