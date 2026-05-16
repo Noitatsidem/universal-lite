@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import logging
+import subprocess
+import time
+from dataclasses import dataclass
+from pathlib import Path
+
+
+MEM_AVAILABLE_THRESHOLD_MIB = 200
+SWAP_FREE_THRESHOLD_MIB = 300
+SAMPLE_INTERVAL_SECONDS = 2
+REQUIRED_CRITICAL_SAMPLES = 2
+COOLDOWN_SECONDS = 60
+CHROME_SCOPE_PATTERN = "app-flatpak-com.google.Chrome-*.scope"
+
+
+def parse_meminfo(text: str) -> dict[str, int | None]:
+    values: dict[str, int | None] = {
+        "mem_available_mib": None,
+        "swap_free_mib": None,
+    }
+    for line in text.splitlines():
+        fields = line.split()
+        if len(fields) < 2:
+            continue
+        if fields[0] == "MemAvailable:":
+            values["mem_available_mib"] = int(fields[1]) // 1024
+        elif fields[0] == "SwapFree:":
+            values["swap_free_mib"] = int(fields[1]) // 1024
+    return values
+
+
+def read_meminfo(path: Path = Path("/proc/meminfo")) -> dict[str, int | None]:
+    return parse_meminfo(path.read_text(encoding="utf-8"))
+
+
+@dataclass
+class PressureState:
+    required_samples: int = REQUIRED_CRITICAL_SAMPLES
+    cooldown_seconds: int = COOLDOWN_SECONDS
+    critical_samples: int = 0
+    last_triggered_at: float | None = None
+
+    def record_sample(
+        self,
+        mem_available_mib: int | None,
+        swap_free_mib: int | None,
+        now: float,
+    ) -> bool:
+        if self.last_triggered_at is not None:
+            if now - self.last_triggered_at < self.cooldown_seconds:
+                return False
+
+        critical = (
+            mem_available_mib is not None
+            and swap_free_mib is not None
+            and mem_available_mib < MEM_AVAILABLE_THRESHOLD_MIB
+            and swap_free_mib < SWAP_FREE_THRESHOLD_MIB
+        )
+        if not critical:
+            self.critical_samples = 0
+            return False
+
+        self.critical_samples += 1
+        return self.critical_samples >= self.required_samples
+
+    def mark_triggered(self, now: float) -> None:
+        self.last_triggered_at = now
+        self.critical_samples = 0
