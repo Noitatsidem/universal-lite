@@ -237,6 +237,8 @@ def test_latest_stream_exposes_devmode_rebase_recipe():
     assert "pkexec bootc switch --enforce-container-sigpolicy" in justfile
     assert "quay.io/noitatsidem/universal-lite:dx" in justfile
     assert "quay.io/noitatsidem/universal-lite:latest" in justfile
+    assert "ostree-image-signed:docker://quay.io/noitatsidem/universal-lite:dx" not in justfile
+    assert "ostree-image-signed:docker://quay.io/noitatsidem/universal-lite:latest" not in justfile
     assert "rpm-ostree rebase" not in justfile
     assert "ghcr.io/universal-lite/universal-lite" not in justfile
 
@@ -247,6 +249,16 @@ def test_devmode_installs_upstream_dialog_dependency():
 
     assert "gum confirm" in justfile
     assert "    gum \\" in build_script
+
+
+def test_readme_stream_switches_use_bootc_registry_refs():
+    readme = _read("README.md")
+    stream_switch_docs = readme.split("### Switch streams", maxsplit=1)[1].split(
+        "## Installer wizard", maxsplit=1
+    )[0]
+
+    assert "pkexec bootc switch --enforce-container-sigpolicy quay.io/noitatsidem/universal-lite:dx" in stream_switch_docs
+    assert "bootc switch --enforce-container-sigpolicy ostree-image-signed" not in stream_switch_docs
 
 
 def test_build_regenerates_current_ublue_ujust_entrypoint():

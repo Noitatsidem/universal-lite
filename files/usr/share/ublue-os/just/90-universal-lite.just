@@ -80,8 +80,8 @@ toggle-devmode:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    latest_ref="ostree-image-signed:docker://quay.io/noitatsidem/universal-lite:latest"
-    dx_ref="ostree-image-signed:docker://quay.io/noitatsidem/universal-lite:dx"
+    latest_ref="quay.io/noitatsidem/universal-lite:latest"
+    dx_ref="quay.io/noitatsidem/universal-lite:dx"
     current_tag=$(jq -r '."image-tag" // ""' /usr/share/ublue-os/image-info.json 2>/dev/null || true)
 
     if [[ "$current_tag" == "dx" ]]; then
