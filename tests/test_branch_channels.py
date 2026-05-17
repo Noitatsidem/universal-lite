@@ -251,6 +251,14 @@ def test_devmode_installs_upstream_dialog_dependency():
     assert "    gum \\" in build_script
 
 
+def test_dx_group_creates_missing_group_entries():
+    justfile = _read("files/usr/share/ublue-os/just/90-universal-lite.just")
+
+    assert "dx-group:" in justfile
+    assert "groupadd --system \"$group_name\"" in justfile
+    assert "grep \"^${group_name}:\" /usr/lib/group | tee -a /etc/group" not in justfile
+
+
 def test_readme_stream_switches_use_bootc_registry_refs():
     readme = _read("README.md")
     stream_switch_docs = readme.split("### Switch streams", maxsplit=1)[1].split(

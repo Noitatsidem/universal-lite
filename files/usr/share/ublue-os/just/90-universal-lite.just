@@ -103,9 +103,16 @@ dx-group:
 
     append_group() {
         local group_name="$1"
-        if ! grep -q "^${group_name}:" /etc/group; then
+        if grep -q "^${group_name}:" /etc/group; then
+            return
+        fi
+
+        if grep -q "^${group_name}:" /usr/lib/group 2>/dev/null; then
             echo "Appending ${group_name} to /etc/group"
-            grep "^${group_name}:" /usr/lib/group | tee -a /etc/group > /dev/null
+            grep "^${group_name}:" /usr/lib/group >> /etc/group
+        else
+            echo "Creating ${group_name} in /etc/group"
+            groupadd --system "$group_name"
         fi
     }
 
